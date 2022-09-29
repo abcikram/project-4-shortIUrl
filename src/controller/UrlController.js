@@ -28,7 +28,7 @@ const urlcreation = async function(req,res){
         urlCode: urlCode 
     }
     const createUrl = await  urlModel.create(obj)
-    return res.status(201).send({status:true,message:"url created successfully",data:createUrl})
+    return res.status(201).send({status:true,message:"url created successfully",data:obj})
 
 }catch(err){
     res.status(500).send({status:false,error:err.message})
