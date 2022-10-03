@@ -1,6 +1,27 @@
 const urlModel = require("../model/UrlModel")
 const shortid = require("shortid")
 const validator = require("validator")
+const redis = require("redis");
+
+const { promisify } = require("util");
+
+//Connect to redis
+const redisClient = redis.createClient(
+    17874,
+  "redis-17874.c264.ap-south-1-1.ec2.cloud.redislabs.com",
+  { no_ready_check: true }
+);
+redisClient.auth("38kcquqXj7eViHhkpxyHNCakh974KfcC", function (err) {
+  if (err) throw err;
+});
+
+redisClient.on("connect", async function () {
+  console.log("Connected to Redis..");
+});
+
+
+const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
+const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 
 const urlcreation = async function(req,res){
 
@@ -42,19 +63,22 @@ const geturl = async function(req,res){
     try{
     let urlCode = req.params.urlCode
 
-    if(urlCode == ":urlCode"){
-        return res.status(400).send({status:false,message:"please enter urlcode in path param"})
-    }
     if(/.*[A-Z].*/.test(urlCode)){
         return res.status(400).send({ status: false, message: "please Enter urlCode only in lowercase" })
     }
     const urlCodeexist = await urlModel.findOne({urlCode:urlCode})
     if(!urlCodeexist)return res.status(404).send({status:false,message:"urlcode not found"})
 
-    let orignalUrl = await urlModel.findOne({urlCode:urlCode}).select({_id:0,longUrl:1})
-
+    let cachedata = await GET_ASYNC(`${req.params.urlCode}`)
+    cachedata = JSON.parse(cachedata)
+    if(cachedata){
+        res.redirect(cachedata.longUrl)
+    }else{
+    let orignalUrl = await urlModel.findOne({urlCode:urlCode}).select({_id:0,longUrl:1});
+      await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(orignalUrl))
     return res.status(302).redirect(orignalUrl.longUrl)
 
+    }
 }catch(err){
     return res.status(500).send({status:false,message:"server error",error:err.message})
 }
