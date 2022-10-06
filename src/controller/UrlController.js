@@ -1,7 +1,6 @@
 const urlModel = require("../model/UrlModel")
 const shortid = require("shortid")
 const redis = require("redis");
-const Axios = require("axios")
 
 
 const { promisify } = require("util");
