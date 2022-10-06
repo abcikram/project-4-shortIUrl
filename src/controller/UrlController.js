@@ -37,7 +37,7 @@ const urlcreation = async function (req, res) {
         if (typeof longUrl !== "string") return res.status(400).send({ status: false, message: "url should be in string format" })
 
         let option = {
-            method: "get",
+            method: "post",
             url: longUrl
         }
         let exist = await axios(option)
@@ -47,7 +47,7 @@ const urlcreation = async function (req, res) {
         if (!exist) return res.status(400).send({ status: false, message: "url is not valid" })
 
         const urlexist = await urlModel.findOne({ longUrl: longUrl }).select({ _id: 0, longUrl: 1, urlCode: 1, shortUrl: 1 })
-        if (urlexist) return res.status(200).send({ status: false, message: "longUrl already exist", data: urlexist })
+        if (urlexist) return res.status(201).send({ status: false, message: "longUrl already exist", data: urlexist })
 
         const urlCode = shortid.generate().toLowerCase()
 
@@ -61,8 +61,9 @@ const urlcreation = async function (req, res) {
         const createUrl = await urlModel.create(obj)
         return res.status(201).send({ status: true, message: "url created successfully", data: obj })
 
-    } catch (err) {
-        res.status(500).send({ status: false, message: "server error", error: err.message })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ status: false, message: "server error", error: error.message })
     }
 
 }
