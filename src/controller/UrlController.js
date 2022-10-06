@@ -2,7 +2,7 @@ const urlModel = require("../model/UrlModel")
 const shortid = require("shortid")
 const redis = require("redis");
 const axios = require("axios")
-const validator = require("validator")
+
 
 const { promisify } = require("util");
 
@@ -29,7 +29,7 @@ const urlcreation = async function (req, res) {
     try {
 
         data = req.body
-        const longUrl = data.longUrl
+        let longUrl = data.longUrl
 
         if (Object.keys(data).length === 0) return res.status(400).send({ status: false, message: "data is required" })
 
@@ -37,8 +37,14 @@ const urlcreation = async function (req, res) {
 
         if (typeof longUrl !== "string") return res.status(400).send({ status: false, message: "url should be in string format" })
 
+        let a = /^www\.[a-z0-9-]+(?:\.[a-z0-9-]+)*\.+(\w)*/
+
+    if(a.test(longUrl)){
+      longUrl="http://"+longUrl
+    }
+    console.log(longUrl)
         let option = {
-            method: "post",
+            method: "get",
             url: longUrl
         }
         let exist = await axios(option)
@@ -46,8 +52,7 @@ const urlcreation = async function (req, res) {
             .catch(() => null)
 
         if (!exist) return res.status(400).send({ status: false, message: "url is not valid" })
-        if(!validator.isURL(longUrl))return res.status(400).send({status:false,message:"longurl is not a valid url"})
-
+       
         const urlexist = await urlModel.findOne({ longUrl: longUrl }).select({ _id: 0, longUrl: 1, urlCode: 1, shortUrl: 1 })
         if (urlexist) return res.status(201).send({ status: false, message: "longUrl already exist", data: urlexist })
 
