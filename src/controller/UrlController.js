@@ -1,6 +1,7 @@
 const urlModel = require("../model/UrlModel")
 const shortid = require("shortid")
 const redis = require("redis");
+const validator = require("validator")
 
 
 const { promisify } = require("util");
@@ -35,15 +36,9 @@ const urlcreation = async function (req, res) {
         if (!longUrl) return res.status(400).send({ status: false, message: "please enter longUrl" })
 
         if (typeof longUrl !== "string") return res.status(400).send({ status: false, message: "url should be in string format" })
-    let reg =
-    /^(https:\/\/www\.|http:\/\/www\.|www\.|https:\/\/|http:\/\/)[^www.,-_][a-zA-Z0-9\-_.$]+\.[a-zA-Z]{2,5}(:[0-9]{1,5})?(\/[^\s]*)$/gm;
-  let regex = reg.test(longUrl);
 
-  if (regex === false) {
-    return res
-      .status(400)
-      .send({ status: false, msg: "Please Enter a valid URL." });
-  }
+        if(!validator.isURL(longUrl))return res.status(400).send ({status:false, message:"url is not valid"})
+
         const urlexist = await urlModel.findOne({ longUrl: longUrl }).select({ _id: 0, longUrl: 1, urlCode: 1, shortUrl: 1 })
         if (urlexist) return res.status(201).send({ status: false, message: "longUrl already exist", data: urlexist })
 
@@ -57,6 +52,7 @@ const urlcreation = async function (req, res) {
             urlCode: urlCode
         }
         const createUrl = await urlModel.create(obj)
+        await SET_ASYNC(`${urlCode}`, JSON.stringify(longUrl))
         return res.status(201).send({ status: true, message: "url created successfully", data: obj })
 
     } catch (error) {
@@ -79,12 +75,10 @@ const geturl = async function (req, res) {
         let cachedata = await GET_ASYNC(`${req.params.urlCode}`)
         cachedata = JSON.parse(cachedata)
         if (cachedata) {
-            res.status(302).redirect(cachedata.longUrl)
+            res.status(302).redirect(cachedata)
         } else {
             let orignalUrl = await urlModel.findOne({ urlCode: urlCode }).select({ _id: 0, longUrl: 1 });
-            await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(orignalUrl))
             return res.status(302).redirect(orignalUrl.longUrl)
-
         }
     } catch (err) {
         return res.status(500).send({ status: false, message: "server error", error: err.message })
