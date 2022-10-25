@@ -24,6 +24,9 @@ redisClient.on("connect", async function () {
 const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
 const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 
+
+//___________________________________________________ Create Short Url __________________________________________________________//
+
 const urlcreation = async function (req, res) {
       
     try {
@@ -62,6 +65,9 @@ const urlcreation = async function (req, res) {
 
 }
 
+//_________________________________________________ Get Url __________________________________________________________//
+
+
 const geturl = async function (req, res) {
     try {
         let urlCode = req.params.urlCode
@@ -85,4 +91,7 @@ const geturl = async function (req, res) {
     }
 }
 
+//_______________________________________________ Module Exports __________________________________________________//
+
 module.exports = { urlcreation, geturl }
+
